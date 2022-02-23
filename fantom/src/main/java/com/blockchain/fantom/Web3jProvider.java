@@ -16,9 +16,12 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Convert;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -66,10 +69,10 @@ private final String DEFAULT_FMT_ADDRESS = "0xFF3aA6948602aE7Db17A5eF18943041c8F
         return result;
     }
 
-    public EthGetBalance getEthBalance() {
+    public EthGetBalance getEthBalance(String address) {
         EthGetBalance result = new EthGetBalance();
         try {
-            result = web3b.ethGetBalance(DEFAULT_LOCAL_ADDRESS, DefaultBlockParameter.valueOf("latest")).sendAsync().get();
+            result = web3b.ethGetBalance(address, DefaultBlockParameterName.LATEST).sendAsync().get();
         } catch (Exception ex) {
             System.out.println("Error getting balance");
         }
@@ -78,9 +81,7 @@ private final String DEFAULT_FMT_ADDRESS = "0xFF3aA6948602aE7Db17A5eF18943041c8F
     }
 
     public EthTransaction fetchAccountTransaction(String hash) throws Exception {
-        EthTransaction result = new EthTransaction();
-        result = web3b.ethGetTransactionByHash(hash).sendAsync().get();
-        return result;
+        return web3b.ethGetTransactionByHash(hash).sendAsync().get();
     }
 
     public void doTransaction1() throws IOException, InterruptedException {
@@ -110,8 +111,8 @@ private final String DEFAULT_FMT_ADDRESS = "0xFF3aA6948602aE7Db17A5eF18943041c8F
 
     }
 
-    public void doTransaction() throws TransactionException, IOException, InterruptedException, ExecutionException {
-        Credentials credentials = Credentials.create(PRIVATE_KEY_FTM);
+    public TransactionReceipt doTransaction() throws TransactionException, IOException, InterruptedException, ExecutionException {
+        Credentials credentials = Credentials.create("48381480938647817788888569600621352188303520492045495012845907566729710721837");
         TransactionManager transactionManager = new RawTransactionManager(
                 web3b, credentials, 4002L);
         // Gas Parameter
@@ -138,6 +139,40 @@ private final String DEFAULT_FMT_ADDRESS = "0xFF3aA6948602aE7Db17A5eF18943041c8F
                 + Convert.fromWei(web3b.ethGetBalance(credentials.getAddress(), DefaultBlockParameterName.LATEST)
                 .send().getBalance().toString(), Convert.Unit.ETHER));
 
+        return transactionReceipt.orElse(null);
+
+    }
+
+    public String createFtmWallet(String password) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+        String walletPassword = password;
+        String walletDirectory = "/home/faiza/Documents/wallets";
+        String accountAddress = null;
+
+        //System.out.println(getKeyPair().getPrivate().toString());
+        try {
+            String walletName =  WalletUtils.generateNewWalletFile(walletPassword, new File(walletDirectory));
+            Credentials credentials = WalletUtils.loadCredentials(walletPassword, walletDirectory + "/" + walletName);
+            accountAddress = credentials.getAddress();
+
+            System.out.println("wallet location: " + walletDirectory + "/" + walletName);
+            System.out.println("Account address: " + credentials.getAddress());
+            System.out.println(credentials.getEcKeyPair().getPrivateKey());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return accountAddress;
+    }
+
+
+    KeyPair getKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+        ECGenParameterSpec ecSpec = new ECGenParameterSpec("secp256k1");
+        keyGen.initialize(ecSpec);
+        KeyPair kp = keyGen.generateKeyPair();
+        PublicKey pub = kp.getPublic();
+        PrivateKey pvt = kp.getPrivate();
+
+        return kp;
     }
 
 

@@ -2,13 +2,14 @@ package com.blockchain.fantom;
 
 import java.time.Duration;
 
-public class ResponseTransfer {
+public class ResponseTransfer<T> {
 
     public ResponseTransfer() {
     }
 
     private Duration performance;
     private String message;
+    private T content;
 
     public Duration getPerformance() {
         return performance;
@@ -26,4 +27,11 @@ public class ResponseTransfer {
         this.message = message;
     }
 
+    public T getContent() {
+        return content;
+    }
+
+    public void setContent(T content) {
+        this.content = content;
+    }
 }

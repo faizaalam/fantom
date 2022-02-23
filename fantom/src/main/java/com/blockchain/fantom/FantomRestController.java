@@ -1,12 +1,8 @@
 package com.blockchain.fantom;
 
 import org.springframework.web.bind.annotation.*;
-import org.web3j.protocol.core.methods.response.EthAccounts;
-import org.web3j.protocol.core.methods.response.EthBlockNumber;
-import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
-import org.web3j.protocol.core.methods.response.EthTransaction;
+import org.web3j.protocol.core.methods.response.*;
 
-import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -23,9 +19,8 @@ public class FantomRestController {
 
 
     @RequestMapping(value = "/blocks", method = RequestMethod.GET)
-    public Future<ResponseTransfer> getBlock() {
-        ResponseTransfer responseTransfer = new ResponseTransfer();
-       // Instant start = TimeHelper.start();
+    public Future<ResponseTransfer<EthBlockNumber>> getBlock() {
+        ResponseTransfer<EthBlockNumber> responseTransfer = new ResponseTransfer<>();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -35,45 +30,46 @@ public class FantomRestController {
                 responseTransfer.setMessage("Error");
             }
             return responseTransfer;
-        }).thenApplyAsync(result -> {
-           // result.setPerformance(TimeHelper.stop(start));
-            return result;
-        });
+        }).thenApplyAsync(result -> result);
     }
 
     @PostMapping(value = "/transactions")
-    public void doTransaction() {
+    public Future<ResponseTransfer<TransactionReceipt>> doTransaction() {
+        ResponseTransfer<TransactionReceipt> responseTransfer = new ResponseTransfer<>();
+
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                web3jProvider.doTransaction();
+                TransactionReceipt result = web3jProvider.doTransaction();
+                responseTransfer.setMessage(result.getBlockNumber().toString());
+                responseTransfer.setContent(result);
             } catch (Exception e) {
+                responseTransfer.setMessage("Error");
                 throw new RuntimeException(e);
             }
-        }
+            return responseTransfer;
+        }).thenApplyAsync(result -> result);
+    }
 
 
-            @RequestMapping(value = "/transactions/{txnHash}", method = RequestMethod.GET)
-    public Future<ResponseTransfer> getTransactionDetails(@PathVariable("txnHash") String txnHash) {
-        ResponseTransfer responseTransfer = new ResponseTransfer();
-        // Instant start = TimeHelper.start();
+    @RequestMapping(value = "/transactions/{txnHash}", method = RequestMethod.GET)
+    public Future<ResponseTransfer<EthTransaction>> getTransactionDetails(@PathVariable("txnHash") String txnHash) {
+        ResponseTransfer<EthTransaction> responseTransfer = new ResponseTransfer<>();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 EthTransaction result = web3jProvider.fetchAccountTransaction(txnHash);
-                System.out.println(result.getTransaction().get().getNonce());
-                responseTransfer.setMessage(result.getTransaction().get().getBlockNumber().toString());
+                responseTransfer.setContent(result);
             } catch (Exception e) {
                 responseTransfer.setMessage("Error");
+                throw new RuntimeException(e);
             }
             return responseTransfer;
-        }).thenApplyAsync(result -> {
-            // result.setPerformance(TimeHelper.stop(start));
-            return result;
-        });
+        }).thenApplyAsync(result -> result);
     }
+
     @RequestMapping(value = "/accounts", method = RequestMethod.GET)
-    public Future<ResponseTransfer> getAccounts() {
-        ResponseTransfer responseTransfer = new ResponseTransfer();
-       // Instant start = TimeHelper.start();
+    public Future<ResponseTransfer<EthAccounts>> getAccounts() {
+        ResponseTransfer<EthAccounts> responseTransfer = new ResponseTransfer<>();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -85,28 +81,51 @@ public class FantomRestController {
             }
             return responseTransfer;
 
-        }).thenApplyAsync(result -> {
-           // result.setPerformance(TimeHelper.stop(start));
-            return result;
-        });
+        }).thenApplyAsync(result -> result);
     }
 
-    @RequestMapping(value = "/transactions", method = RequestMethod.GET)
-    public Future<ResponseTransfer> getTransactions() {
-        ResponseTransfer responseTransfer = new ResponseTransfer();
-       // Instant start = TimeHelper.start();
+    @RequestMapping(value = "/accounts/{address}/balance", method = RequestMethod.GET)
+    public Future<ResponseTransfer<EthGetBalance>> getAccountBalance(@PathVariable("address") String address) {
+        ResponseTransfer<EthGetBalance> responseTransfer = new ResponseTransfer<>();
+
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                EthGetBalance result = web3jProvider.getEthBalance(address);
+                responseTransfer.setContent(result);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return responseTransfer;
+
+        }).thenApplyAsync(result -> result);
+    }
+
+    @RequestMapping(value = "/transactions/count", method = RequestMethod.GET)
+    public Future<ResponseTransfer<EthGetTransactionCount>> getTransactionCounts() {
+        ResponseTransfer<EthGetTransactionCount> responseTransfer = new ResponseTransfer<>();
+        // Instant start = TimeHelper.start();
         return CompletableFuture.supplyAsync(() -> {
             try {
                 EthGetTransactionCount result = web3jProvider.getTransactionCount();
                 responseTransfer.setMessage(result.toString());
+                responseTransfer.setContent(result);
             } catch (Exception e) {
                 responseTransfer.setMessage("Error");
             }
             return responseTransfer;
-        }).thenApplyAsync(result -> {
-           // result.setPerformance(TimeHelper.stop(start));
-            return result;
-        });
+        }).thenApplyAsync(result -> result);
+    }
+
+    @RequestMapping(value = "/accounts", method = RequestMethod.POST)
+    public Future<String> createWallet(@RequestParam("password") String password) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return web3jProvider.createFtmWallet(password);
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).thenApplyAsync(result -> result);
     }
 
 
