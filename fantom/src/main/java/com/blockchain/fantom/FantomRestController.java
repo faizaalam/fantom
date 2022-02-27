@@ -3,6 +3,7 @@ package com.blockchain.fantom;
 import org.springframework.web.bind.annotation.*;
 import org.web3j.protocol.core.methods.response.*;
 
+import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -35,6 +36,7 @@ public class FantomRestController {
 
     @PostMapping(value = "/transactions")
     public Future<ResponseTransfer<TransactionReceipt>> doTransaction() {
+
         ResponseTransfer<TransactionReceipt> responseTransfer = new ResponseTransfer<>();
 
         return CompletableFuture.supplyAsync(() -> {
@@ -49,6 +51,19 @@ public class FantomRestController {
             return responseTransfer;
         }).thenApplyAsync(result -> result);
     }
+
+    @PostMapping(value = "/transactions2")
+    public TransactionReceipt doTransaction(
+            @RequestParam(value = "toAddress", required = false) String toAddress,
+            @RequestParam(value = "value", required = false)BigDecimal value) {
+        try {
+            return web3jProvider.doTransaction(null, toAddress, value);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
     @RequestMapping(value = "/transactions/{txnHash}", method = RequestMethod.GET)
@@ -101,12 +116,12 @@ public class FantomRestController {
     }
 
     @RequestMapping(value = "/transactions/count", method = RequestMethod.GET)
-    public Future<ResponseTransfer<EthGetTransactionCount>> getTransactionCounts() {
+    public Future<ResponseTransfer<EthGetTransactionCount>> getTransactionCounts(@RequestParam(value = "address") String address) {
         ResponseTransfer<EthGetTransactionCount> responseTransfer = new ResponseTransfer<>();
         // Instant start = TimeHelper.start();
         return CompletableFuture.supplyAsync(() -> {
             try {
-                EthGetTransactionCount result = web3jProvider.getTransactionCount();
+                EthGetTransactionCount result = web3jProvider.getTransactionCount(address);
                 responseTransfer.setMessage(result.toString());
                 responseTransfer.setContent(result);
             } catch (Exception e) {
@@ -117,9 +132,14 @@ public class FantomRestController {
     }
 
     @RequestMapping(value = "/accounts", method = RequestMethod.POST)
-    public Future<String> createWallet(@RequestParam("password") String password) {
+    public Future<String> createWallet(
+            @RequestParam("password") String password,
+            @RequestParam(value ="mnemonic", required = false) String mnemonic) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (mnemonic != null)  {
+                    return web3jProvider.restoreWallet(password, mnemonic);
+                }
                 return web3jProvider.createFtmWallet(password);
 
             } catch (Exception e) {

@@ -13,11 +13,11 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.web3j:core:4.8.7'
+	implementation 'org.web3j:core:5.0.0'
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	implementation 'com.squareup.okhttp3:okhttp:4.9.3'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
 
 }
