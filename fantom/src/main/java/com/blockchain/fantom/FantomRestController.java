@@ -28,7 +28,7 @@ public class FantomRestController {
                 EthBlockNumber result = web3jProvider.getBlockNumber();
                 responseTransfer.setMessage(result.getBlockNumber().toString());
             } catch (Exception e) {
-                responseTransfer.setMessage("Error");
+               throw new RuntimeException(e);
             }
             return responseTransfer;
         }).thenApplyAsync(result -> result);
@@ -54,10 +54,12 @@ public class FantomRestController {
 
     @PostMapping(value = "/transactions2")
     public TransactionReceipt doTransaction(
+            @RequestParam(value = "username", required = false) String username,
             @RequestParam(value = "toAddress", required = false) String toAddress,
-            @RequestParam(value = "value", required = false)BigDecimal value) {
+            @RequestParam(value = "value", required = false)BigDecimal value,
+            @RequestParam(value = "privateKey", required = false) String privateKey) {
         try {
-            return web3jProvider.doTransaction(null, toAddress, value);
+            return web3jProvider.doTransaction(username, toAddress, value, privateKey);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -134,13 +136,14 @@ public class FantomRestController {
     @RequestMapping(value = "/accounts", method = RequestMethod.POST)
     public Future<String> createWallet(
             @RequestParam("password") String password,
+            @RequestParam(value ="userName", required = false) String userName,
             @RequestParam(value ="mnemonic", required = false) String mnemonic) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 if (mnemonic != null)  {
-                    return web3jProvider.restoreWallet(password, mnemonic);
+                    return web3jProvider.restoreWallet(password, userName, mnemonic);
                 }
-                return web3jProvider.createFtmWallet(password);
+                return web3jProvider.createFtmWallet(password, userName);
 
             } catch (Exception e) {
                 throw new RuntimeException(e);

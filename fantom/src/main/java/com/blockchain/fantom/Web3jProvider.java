@@ -30,16 +30,22 @@ import java.util.concurrent.ExecutionException;
 public class Web3jProvider {
     private final String pathToWallet =  "/home/faiza/Documents/wallets";
 
+    private final WalletRepository walletRepository;
 
-    Web3j web3b = Web3j.build(new HttpService());
-    Web3j web3ba = Web3j.build(new HttpService("https://rpc.testnet.fantom.network"));
+
+    public Web3jProvider(WalletRepository walletRepository) {
+        this.walletRepository = walletRepository;
+    }
+
+    Web3j web3b= Web3j.build(new HttpService());
+    Web3j web3b1 = Web3j.build(new HttpService("https://rpc.testnet.fantom.network"));
 
     public EthBlockNumber getBlockNumber() {
         EthBlockNumber result = new EthBlockNumber();
         try {
-            result = web3b.ethBlockNumber().sendAsync().get();
+            result = web3b.ethBlockNumber().send();
         } catch (Exception ex) {
-            System.out.println("Could not get block number");
+            throw new RuntimeException(ex);
         }
         return result;
     }
@@ -69,7 +75,7 @@ public class Web3jProvider {
         try {
             result = web3b.ethGetBalance(address, DefaultBlockParameterName.LATEST).sendAsync().get();
         } catch (Exception ex) {
-            System.out.println("Error getting balance");
+            throw new RuntimeException(ex);
         }
         return result;
 
@@ -113,32 +119,74 @@ public class Web3jProvider {
 
     }
 
-    public String createFtmWallet(String password) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+    public String createFtmWallet(String password, String username) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
         String walletDirectory = "/home/faiza/Documents/wallets";
         String accountAddress = null;
 
         try {
             Bip39Wallet wallet =  WalletUtils.generateBip39Wallet(password, new File(walletDirectory));
-            Credentials credentials = WalletUtils.loadCredentials(password, wallet.getMnemonic());
+            Credentials credentials = WalletUtils.loadBip39Credentials(password, wallet.getMnemonic());
             accountAddress = credentials.getAddress();
 
             System.out.println("wallet location: " + walletDirectory + "/" + wallet.getFilename());
             System.out.println("Account address: " + credentials.getAddress());
             System.out.println(credentials.getEcKeyPair().getPrivateKey());
+
+
+            UserWallet userWallet = new UserWallet();
+            userWallet.setUserName(username);
+            userWallet.setPassword(password);
+            userWallet.setMnemonic(wallet.getMnemonic());
+            userWallet.setAddress(credentials.getAddress());
+
+
+            walletRepository.save(userWallet);
+
+
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return accountAddress;
     }
 
-    public String restoreWallet(String password, String mnemonic) throws CipherException, IOException {
+    public String restoreWallet(String password, String userName, String mnemonic) throws CipherException, IOException {
         Credentials credentials = WalletUtils.loadBip39Credentials(password, mnemonic);
+        Bip39Wallet wallet =  WalletUtils.generateBip39WalletFromMnemonic(password, mnemonic, new File(pathToWallet));
+        UserWallet userWallet = new UserWallet();
+        userWallet.setUserName(userName);
+        userWallet.setPassword(password);
+        userWallet.setMnemonic(wallet.getMnemonic());
+        userWallet.setAddress(credentials.getAddress());
+
+
+        // could save the whole wallet with username password
+
+        walletRepository.save(userWallet);
+
         return credentials.getAddress();
     }
 
+//    public String connectWallet(String privateKey, String password, String userName) throws CipherException, IOException {
+//        Credentials credentials = Credentials.create(privateKey);
+//
+//        UserWallet userWallet = new UserWallet();
+//        userWallet.setUserName(userName);
+//        userWallet.setPassword(password);
+//        userWallet.setAddress(credentials.getAddress());
+//        return credentials.getAddress();
+//    }
 
-    public TransactionReceipt doTransaction(String password, String toAddress, BigDecimal value ) throws Exception {
-        Credentials credentials = WalletUtils.loadCredentials(password, pathToWallet);
+
+    public TransactionReceipt doTransaction(String username, String toAddress, BigDecimal value , String privateKey) throws Exception {
+        Credentials credentials = null;
+        if (privateKey != null) {
+            credentials = Credentials.create(privateKey);
+        } else  {
+            UserWallet userWallet = walletRepository.findByUserName(username).orElseThrow(RuntimeException::new);
+            credentials =WalletUtils.loadBip39Credentials(userWallet.getPassword(), userWallet.getMnemonic());
+
+        }
 
         return TransferToken.transfer(web3b, credentials, toAddress, value) ;
     }

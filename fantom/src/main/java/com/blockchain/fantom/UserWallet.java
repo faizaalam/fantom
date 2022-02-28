@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 
-@Document("UserWallets")
+@Document("Wallets")
 public class UserWallet implements Serializable {
 
     @Id
@@ -14,6 +14,10 @@ public class UserWallet implements Serializable {
     private String userName;
 
     private String password;
+
+    private String mnemonic;
+
+    private String address;
 
 
     public String getId() {
@@ -38,5 +42,29 @@ public class UserWallet implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getMnemonic() {
+        return mnemonic;
+    }
+
+    public void setMnemonic(String mnemonic) {
+        this.mnemonic = mnemonic;
+    }
+
+    public UserWallet() {
+    }
+
+    public UserWallet(String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
