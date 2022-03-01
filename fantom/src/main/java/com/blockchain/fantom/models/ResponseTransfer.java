@@ -1,4 +1,4 @@
-package com.blockchain.fantom;
+package com.blockchain.fantom.models;
 
 import java.time.Duration;
 

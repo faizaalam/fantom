@@ -1,4 +1,4 @@
-package com.blockchain.fantom;
+package com.blockchain.fantom.utils;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;

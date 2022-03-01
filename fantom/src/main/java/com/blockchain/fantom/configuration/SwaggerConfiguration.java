@@ -1,4 +1,4 @@
-package com.blockchain.fantom;
+package com.blockchain.fantom.configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
